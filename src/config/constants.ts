@@ -1,0 +1,11 @@
+export const CHUNK_MAX_TOKENS = 512;
+export const CHUNK_MIN_TOKENS = 256;
+export const DEFAULT_TOP_K = 20;
+export const DEFAULT_RERANK_TOP_N = 5;
+export const DEFAULT_VECTOR_WEIGHT = 0.7;
+export const DEFAULT_BM25_WEIGHT = 0.3;
+export const DEFAULT_EMBEDDING_MODEL = 'Xenova/multilingual-e5-small';
+export const TABLE_NAME = 'document_chunks';
+export const EMBEDDING_DIMENSION = 384;
+export const E5_QUERY_PREFIX = 'query: ';
+export const E5_PASSAGE_PREFIX = 'passage: ';

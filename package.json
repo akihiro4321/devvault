@@ -1,0 +1,34 @@
+{
+  "name": "gitlab-mr-knowledge-base",
+  "version": "0.1.0",
+  "description": "RAG pipeline for GitLab MR knowledge base",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "gitlab-mr-kb": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ingest": "tsx scripts/ingest.ts",
+    "search": "tsx scripts/search-cli.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.7.2",
+    "ai": "^5.0.69",
+    "dotenv": "^16.6.1",
+    "vectordb": "^0.21.2",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
