@@ -1,4 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import readline from 'node:readline/promises';
+import { env } from '../src/config/env.js';
 import { ask, search } from '../src/index.js';
 
 function readFlag(name: string): string | undefined {
@@ -32,6 +35,11 @@ async function runInteractive(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  const sidecarPath = path.join(env.LANCEDB_PATH, '_chunks.json');
+  if (!fs.existsSync(sidecarPath)) {
+    throw new Error('Indexed data not found. Run ingest first (npm run ingest -- --project-id <id>).');
+  }
+
   const query = readFlag('--query');
   if (query) {
     await runOneShot(query);

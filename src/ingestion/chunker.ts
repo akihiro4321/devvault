@@ -8,12 +8,18 @@ export function addE5Prefix(text: string, isQuery: boolean): string {
 }
 
 function approxTokenLength(text: string): number {
-  return Math.ceil(text.length / 2);
+  let cjk = 0;
+  let ascii = 0;
+  for (const ch of text) {
+    if (ch.charCodeAt(0) > 0x2e7f) cjk += 1;
+    else ascii += 1;
+  }
+  return cjk + Math.ceil(ascii / 4);
 }
 
 function splitByLength(text: string, maxTokens = CHUNK_MAX_TOKENS): string[] {
   if (approxTokenLength(text) <= maxTokens) return [text.trim()];
-  const maxChars = maxTokens * 2;
+  const maxChars = maxTokens;
   const chunks: string[] = [];
   for (let i = 0; i < text.length; i += maxChars) {
     chunks.push(text.slice(i, i + maxChars).trim());
@@ -50,10 +56,10 @@ function baseChunk(mr: MergeRequest, overrides: Partial<DocumentChunk>): Omit<Do
     text: '',
     source_type: 'mr_description',
     source_system: 'gitlab',
-    project_id: mr.id,
-    project_key: `gitlab-${mr.id}`,
+    project_id: mr.project_id,
+    project_key: `gitlab-${mr.project_id}`,
     source_iid: mr.iid,
-    source_id: `mr-${mr.id}`,
+    source_id: `mr-${mr.project_id}-${mr.iid}`,
     author: mr.author.username,
     labels: mr.labels.join(','),
     target_branch: mr.target_branch,
@@ -74,8 +80,8 @@ export function chunkMRDescription(mr: MergeRequest): DocumentChunk[] {
     id: randomUUID(),
     ...baseChunk(mr, {
       source_type: 'mr_description',
-      source_id: `mr-description-${mr.id}-${idx}`,
-      text: addE5Prefix(`[${mr.title}] ${section}`, false),
+      source_id: `mr-description-${mr.project_id}-${mr.iid}-${idx}`,
+      text: `[${mr.title}] ${section}`,
       chunk_index: idx,
       total_chunks: sections.length,
     }),
@@ -100,7 +106,7 @@ export function chunkMRComment(note: Note, mr: MergeRequest, thread: Note[]): Do
       source_id: `mr-comment-${note.id}-${bodyIdx}`,
       author: note.author.username,
       created_at: note.created_at,
-      text: addE5Prefix(`[${mr.title}] レビューコメント: ${body}`, false),
+      text: `[${mr.title}] レビューコメント: ${body}`,
       discussion_context: context,
       chunk_index: bodyIdx,
       total_chunks: bodyChunks.length,
@@ -125,7 +131,7 @@ export function chunkDiffNote(note: Note, mr: MergeRequest): DocumentChunk[] {
       author: note.author.username,
       created_at: note.created_at,
       file_path: filePath,
-      text: addE5Prefix(`${prefix} レビュー指摘: ${body}`, false),
+      text: `${prefix} レビュー指摘: ${body}`,
       chunk_index: idx,
       total_chunks: bodies.length,
     }),
@@ -148,9 +154,9 @@ export function chunkDiff(diff: MRDiff, mr: MergeRequest): DocumentChunk[] {
     id: randomUUID(),
     ...baseChunk(mr, {
       source_type: 'mr_diff',
-      source_id: `mr-diff-${mr.id}-${filePath}-${idx}`,
+      source_id: `mr-diff-${mr.project_id}-${mr.iid}-${filePath}-${idx}`,
       file_path: filePath,
-      text: addE5Prefix(`[${filePath}] コード変更: ${piece}`, false),
+      text: `[${filePath}] コード変更: ${piece}`,
       chunk_index: idx,
       total_chunks: pieces.length,
     }),

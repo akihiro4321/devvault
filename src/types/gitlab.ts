@@ -7,6 +7,7 @@ export interface GitLabUser {
 export interface MergeRequest {
   id: number;
   iid: number;
+  project_id: number;
   title: string;
   description: string;
   state: 'opened' | 'merged' | 'closed' | string;

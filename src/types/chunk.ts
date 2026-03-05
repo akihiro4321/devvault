@@ -4,12 +4,14 @@ export type SourceType =
   | 'mr_diff_note'
   | 'mr_diff';
 
+export type SourceSystem = 'gitlab' | 'jira' | 'backlog' | 'confluence';
+
 export interface DocumentChunk {
   id: string;
   vector?: number[];
   text: string;
   source_type: SourceType;
-  source_system: 'gitlab';
+  source_system: SourceSystem;
   project_id: number;
   project_key: string;
   source_iid: number;

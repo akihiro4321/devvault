@@ -51,10 +51,11 @@ export class LanceIndexer {
 
   async upsert(chunks: DocumentChunk[]): Promise<void> {
     const existing = await this.readSidecar();
-    const merged = new Map(existing.map((c) => [c.source_id, c]));
-    for (const chunk of chunks) merged.set(chunk.source_id, chunk);
-
-    const values = Array.from(merged.values());
+    const updateTargets = new Set(chunks.map((c) => `${c.project_id}:${c.source_iid}`));
+    const retained = existing.filter((c) => !updateTargets.has(`${c.project_id}:${c.source_iid}`));
+    const deduped = new Map<string, DocumentChunk>();
+    for (const chunk of [...retained, ...chunks]) deduped.set(chunk.source_id, chunk);
+    const values = Array.from(deduped.values());
     await this.writeSidecar(values);
 
     if (this.table) {

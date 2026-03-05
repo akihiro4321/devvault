@@ -29,17 +29,31 @@ export async function generateAnswer(chunks: RankedChunk[], question: string): P
 
   try {
     const ai = await import('ai');
+    const model =
+      env.LLM_PROVIDER === 'gemini'
+        ? await (async () => {
+            const pkg = await import('@ai-sdk/google');
+            const google = pkg.createGoogleGenerativeAI({ apiKey: env.LLM_API_KEY });
+            return google(env.LLM_MODEL);
+          })()
+        : await (async () => {
+            const pkg = await import('@ai-sdk/anthropic');
+            const anthropic = pkg.createAnthropic({ apiKey: env.LLM_API_KEY });
+            return anthropic(env.LLM_MODEL);
+          })();
 
-    // 実行環境のSDK差分を吸収するためanyで扱う
     const stream = await (ai as any).streamText({
-      model: env.LLM_MODEL,
+      model,
       prompt,
-      apiKey: env.LLM_API_KEY,
-      provider: env.LLM_PROVIDER,
     });
 
     if (typeof stream?.text === 'string') return stream.text;
-    if (typeof stream?.toString === 'function') return stream.toString();
+    if (stream?.text && typeof stream.text.then === 'function') return await stream.text;
+    if (stream?.textStream) {
+      let out = '';
+      for await (const part of stream.textStream) out += part;
+      if (out.trim()) return out;
+    }
     return fallbackAnswer(chunks, question);
   } catch {
     return fallbackAnswer(chunks, question);

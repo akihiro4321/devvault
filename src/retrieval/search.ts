@@ -21,21 +21,65 @@ function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 function tokenize(text: string): string[] {
-  return text
+  const base = text
     .toLowerCase()
     .split(/[^\p{L}\p{N}_]+/u)
     .filter(Boolean);
+  const out = [...base];
+  for (const token of base) {
+    if (token.length < 2) continue;
+    if (!/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(token)) continue;
+    for (let i = 0; i < token.length - 1; i += 1) {
+      out.push(token.slice(i, i + 2));
+    }
+  }
+  return out;
 }
 
-function scoreBM25Like(query: string, chunk: DocumentChunk): number {
-  const q = tokenize(query);
-  const d = tokenize(chunk.text);
-  if (q.length === 0 || d.length === 0) return 0;
+interface BM25Stats {
+  df: Map<string, number>;
+  avgDocLen: number;
+  docCount: number;
+}
+
+function computeBM25Stats(tokenizedDocs: string[][]): BM25Stats {
+  const df = new Map<string, number>();
+  let totalLen = 0;
+  for (const tokens of tokenizedDocs) {
+    totalLen += tokens.length;
+    const unique = new Set(tokens);
+    for (const term of unique) {
+      df.set(term, (df.get(term) ?? 0) + 1);
+    }
+  }
+  return {
+    df,
+    avgDocLen: tokenizedDocs.length > 0 ? totalLen / tokenizedDocs.length : 0,
+    docCount: tokenizedDocs.length,
+  };
+}
+
+function scoreBM25(queryTokens: string[], docTokens: string[], stats: BM25Stats): number {
+  if (queryTokens.length === 0 || docTokens.length === 0 || stats.docCount === 0) return 0;
   const tf = new Map<string, number>();
-  for (const token of d) tf.set(token, (tf.get(token) ?? 0) + 1);
+  for (const token of docTokens) tf.set(token, (tf.get(token) ?? 0) + 1);
+
+  const k1 = 1.2;
+  const b = 0.75;
+  const docLen = docTokens.length;
+  const avgDocLen = stats.avgDocLen || 1;
   let score = 0;
-  for (const term of q) score += tf.get(term) ?? 0;
-  return score / Math.sqrt(d.length);
+
+  for (const term of new Set(queryTokens)) {
+    const freq = tf.get(term) ?? 0;
+    if (freq === 0) continue;
+    const n = stats.df.get(term) ?? 0;
+    const idf = Math.log(1 + (stats.docCount - n + 0.5) / (n + 0.5));
+    const denom = freq + k1 * (1 - b + b * (docLen / avgDocLen));
+    score += idf * ((freq * (k1 + 1)) / denom);
+  }
+
+  return score;
 }
 
 export interface SearchEngineDeps {
@@ -60,6 +104,10 @@ export class SearchEngine {
 
     const all = applyFilters(await this.indexer.readAll(), request.filters);
     const qv = await this.embedder.embed(request.query, true);
+    const queryTokens = tokenize(request.query);
+    const tokenized = new Map<string, string[]>();
+    for (const chunk of all) tokenized.set(chunk.id, tokenize(chunk.text));
+    const bm25Stats = computeBM25Stats(Array.from(tokenized.values()));
 
     const vectorRanked = [...all]
       .map((chunk) => ({ chunk, score: cosineSimilarity(qv, chunk.vector ?? []) }))
@@ -68,7 +116,10 @@ export class SearchEngine {
       .map((item, idx) => ({ ...item, vectorRank: idx + 1 }));
 
     const bm25Ranked = [...all]
-      .map((chunk) => ({ chunk, score: scoreBM25Like(request.query, chunk) }))
+      .map((chunk) => ({
+        chunk,
+        score: scoreBM25(queryTokens, tokenized.get(chunk.id) ?? [], bm25Stats),
+      }))
       .sort((a, b) => b.score - a.score)
       .slice(0, topK)
       .map((item, idx) => ({ ...item, bm25Rank: idx + 1 }));

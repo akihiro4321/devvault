@@ -18,20 +18,19 @@ async function runWithConcurrency<T, R>(
   concurrency: number,
   worker: (item: T) => Promise<R>,
 ): Promise<R[]> {
-  const results: R[] = [];
-  const queue = [...items];
+  const results: Array<R | undefined> = new Array(items.length);
+  let cursor = 0;
 
   async function consume(): Promise<void> {
-    while (queue.length > 0) {
-      const item = queue.shift();
-      if (!item) return;
-      const result = await worker(item);
-      results.push(result);
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await worker(items[index]);
     }
   }
 
   await Promise.all(Array.from({ length: concurrency }, () => consume()));
-  return results;
+  return results.filter((v): v is R => v !== undefined);
 }
 
 export async function fetchMRBundles(
