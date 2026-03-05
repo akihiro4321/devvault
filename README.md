@@ -1,4 +1,4 @@
-# gitlab-mr-knowledge-base
+# devvault
 
 GitLab MR / Issue ナレッジベース向けのPhase 1実装です。
 
