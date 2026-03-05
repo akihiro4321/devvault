@@ -24,7 +24,7 @@ async function main(): Promise<void> {
     const existing = await indexer.readAll();
     const latest = existing
       .filter((chunk) => chunk.project_id === projectId)
-      .map((chunk) => chunk.created_at)
+      .map((chunk) => chunk.updated_at ?? chunk.created_at)
       .sort()
       .at(-1);
     resolvedSince = latest ?? since ?? env.INGEST_SINCE;

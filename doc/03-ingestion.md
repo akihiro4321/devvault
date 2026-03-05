@@ -1,4 +1,4 @@
-# Ingestion
+# DevVault Ingestion
 
 ## 1. GitLabクライアント
 `src/ingestion/gitlab-client.ts`:

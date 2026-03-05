@@ -6,20 +6,32 @@ import type { DocumentChunk } from '../types/chunk.js';
 
 const SIDECAR_FILE = '_chunks.json';
 
+interface LanceTable {
+  createIndex(...args: unknown[]): Promise<unknown>;
+}
+
+interface LanceConnection {
+  openTable(name: string): Promise<LanceTable>;
+  createTable(name: string, data: DocumentChunk[]): Promise<LanceTable>;
+  dropTable(name: string): Promise<void>;
+}
+
 async function ensureDir(dir: string): Promise<void> {
   await fs.mkdir(dir, { recursive: true });
 }
 
 export class LanceIndexer {
-  private db: any;
-  private table: any;
+  private db: LanceConnection | null = null;
+  private table: LanceTable | null = null;
 
   async createTable(): Promise<void> {
     await ensureDir(env.LANCEDB_PATH);
 
     try {
       const lancedb = await import('vectordb');
-      this.db = await (lancedb as any).connect(env.LANCEDB_PATH);
+      this.db = await (lancedb as unknown as { connect: (uri: string) => Promise<LanceConnection> }).connect(
+        env.LANCEDB_PATH,
+      );
       try {
         this.table = await this.db.openTable(TABLE_NAME);
       } catch {
@@ -51,14 +63,16 @@ export class LanceIndexer {
 
   async upsert(chunks: DocumentChunk[]): Promise<void> {
     const existing = await this.readSidecar();
+    // Step 1: 更新対象MR (project_id:source_iid) の旧チャンクを先に取り除く。
     const updateTargets = new Set(chunks.map((c) => `${c.project_id}:${c.source_iid}`));
     const retained = existing.filter((c) => !updateTargets.has(`${c.project_id}:${c.source_iid}`));
+    // Step 2: source_id で重複排除する（異常系の安全弁）。
     const deduped = new Map<string, DocumentChunk>();
     for (const chunk of [...retained, ...chunks]) deduped.set(chunk.source_id, chunk);
     const values = Array.from(deduped.values());
     await this.writeSidecar(values);
 
-    if (this.table) {
+    if (this.table && this.db) {
       try {
         await this.db.dropTable(TABLE_NAME);
       } catch {

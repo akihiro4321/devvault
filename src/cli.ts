@@ -7,7 +7,7 @@ async function main(): Promise<void> {
 
   if (cmd === 'ingest') {
     const projectId = Number(args[0]);
-    if (!projectId) throw new Error('Usage: gitlab-mr-kb ingest <projectId>');
+    if (!projectId) throw new Error('Usage: devvault ingest <projectId>');
     await ingest({ projectId });
     console.log('ingest completed');
     return;
@@ -15,13 +15,13 @@ async function main(): Promise<void> {
 
   if (cmd === 'ask') {
     const question = args.join(' ').trim();
-    if (!question) throw new Error('Usage: gitlab-mr-kb ask <question>');
+    if (!question) throw new Error('Usage: devvault ask <question>');
     const answer = await ask(question);
     console.log(answer);
     return;
   }
 
-  console.log('Usage: gitlab-mr-kb <ingest|ask> ...');
+  console.log('Usage: devvault <ingest|ask> ...');
 }
 
 main().catch((error) => {

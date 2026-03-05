@@ -1,4 +1,4 @@
-# System Overview
+# DevVault System Overview
 
 ## 1. システムの目的
 本システムは、GitLab Merge Request関連情報をナレッジベース化し、以下の問いに高速に答えるための基盤です。

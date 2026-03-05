@@ -1,4 +1,4 @@
-# Interfaces
+# DevVault Interfaces
 
 ## 1. Public API
 `src/index.ts`:

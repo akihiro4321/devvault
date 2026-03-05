@@ -1,4 +1,4 @@
-# Data Model
+# DevVault Data Model
 
 ## 1. GitLab入力モデル
 `src/types/gitlab.ts`:

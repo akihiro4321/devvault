@@ -1,4 +1,4 @@
-# Testing
+# DevVault Testing
 
 ## 1. テスト構成
 - `tests/chunker.test.ts`: チャンキング仕様

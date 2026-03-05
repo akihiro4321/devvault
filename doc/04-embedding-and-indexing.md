@@ -1,4 +1,4 @@
-# Embedding And Indexing
+# DevVault Embedding And Indexing
 
 ## 1. Embedding
 `src/ingestion/embedder.ts`:

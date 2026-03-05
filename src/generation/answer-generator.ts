@@ -28,7 +28,7 @@ export async function generateAnswer(chunks: RankedChunk[], question: string): P
   if (!env.LLM_API_KEY) return fallbackAnswer(chunks, question);
 
   try {
-    const ai = await import('ai');
+    const { streamText } = await import('ai');
     const model =
       env.LLM_PROVIDER === 'gemini'
         ? await (async () => {
@@ -42,8 +42,9 @@ export async function generateAnswer(chunks: RankedChunk[], question: string): P
             return anthropic(env.LLM_MODEL);
           })();
 
-    const stream = await (ai as any).streamText({
+    const stream = await streamText({
       model,
+      system: 'あなたは開発チームのナレッジベースアシスタントです。検索結果のみに基づいて回答し、必ず出典MR/コメントを明記してください。',
       prompt,
     });
 

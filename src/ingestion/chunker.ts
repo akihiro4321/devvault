@@ -19,11 +19,27 @@ function approxTokenLength(text: string): number {
 
 function splitByLength(text: string, maxTokens = CHUNK_MAX_TOKENS): string[] {
   if (approxTokenLength(text) <= maxTokens) return [text.trim()];
-  const maxChars = maxTokens;
   const chunks: string[] = [];
-  for (let i = 0; i < text.length; i += maxChars) {
-    chunks.push(text.slice(i, i + maxChars).trim());
+  let start = 0;
+
+  while (start < text.length) {
+    let end = Math.min(text.length, start + maxTokens);
+
+    while (end < text.length && approxTokenLength(text.slice(start, end)) < maxTokens) {
+      const next = Math.min(text.length, end + 64);
+      if (next === end) break;
+      end = next;
+    }
+
+    while (end > start + 1 && approxTokenLength(text.slice(start, end)) > maxTokens) {
+      end -= 1;
+    }
+
+    chunks.push(text.slice(start, end).trim());
+    if (end <= start) break;
+    start = end;
   }
+
   return chunks.filter(Boolean);
 }
 
@@ -64,6 +80,7 @@ function baseChunk(mr: MergeRequest, overrides: Partial<DocumentChunk>): Omit<Do
     labels: mr.labels.join(','),
     target_branch: mr.target_branch,
     created_at: mr.created_at,
+    updated_at: mr.updated_at ?? mr.created_at,
     web_url: mr.web_url,
     parent_title: mr.title,
     chunk_index: 0,

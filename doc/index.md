@@ -1,4 +1,4 @@
-# devvault Documentation
+# DevVault Documentation
 
 ## 目的
 GitLab MRデータ（Description / Discussion / Diff）を対象に、検索と出典付き回答を提供するRAG基盤の説明です。

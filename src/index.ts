@@ -28,6 +28,7 @@ export async function ingest(options: IngestOptions): Promise<number> {
 
   const chunks = bundles.flatMap((bundle) => chunkFromFetchedBundle(bundle));
   const embedder = new Embedder();
+  // chunk.text はプレフィックスなしの検索用本文。embedding時のみ embedder 内で "passage: " を付与する。
   const vectors = await embedder.embedBatch(chunks.map((c) => c.text), false);
 
   chunks.forEach((chunk, idx) => {

@@ -16,6 +16,7 @@ export interface MergeRequest {
   author: GitLabUser;
   labels: string[];
   created_at: string;
+  updated_at?: string;
   merged_at?: string | null;
   web_url: string;
   draft?: boolean;

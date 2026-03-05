@@ -6,8 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "devvault": "dist/cli.js",
-    "gitlab-mr-kb": "dist/cli.js"
+    "devvault": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

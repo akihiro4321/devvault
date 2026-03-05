@@ -1,4 +1,4 @@
-# Retrieval
+# DevVault Retrieval
 
 ## 1. 検索エンジン
 `src/retrieval/search.ts` の `SearchEngine.hybridSearch()` が中心です。

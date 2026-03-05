@@ -21,6 +21,7 @@ export interface DocumentChunk {
   target_branch: string;
   file_path?: string;
   created_at: string;
+  updated_at?: string;
   web_url: string;
   parent_title: string;
   discussion_context?: string;

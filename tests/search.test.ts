@@ -19,7 +19,7 @@ const baseChunk = (id: string, text: string): DocumentChunk => ({
   parent_title: 'title',
   chunk_index: 0,
   total_chunks: 1,
-  vector: [0, 0, 0],
+  vector: new Array(384).fill(0),
 });
 
 describe('search', () => {
@@ -29,7 +29,7 @@ describe('search', () => {
       baseChunk('b', 'フロントの色調整と余白修正'),
     ];
 
-    const embedder = { embed: async () => [0, 0, 0] };
+    const embedder = { embed: async () => new Array(384).fill(0) };
     const indexer = { readAll: async () => docs };
     const engine = new SearchEngine({ embedder: embedder as any, indexer: indexer as any });
 
