@@ -1,11 +1,11 @@
 import type {
+  ChangeRequest,
+  ChangeRequestClient,
+  ChangeRequestDiff,
+  ChangeRequestDiscussion,
+  ChangeRequestNote,
+  ChangeRequestUser,
   ProjectRef,
-  ReviewClient,
-  ReviewDiff,
-  ReviewDiscussion,
-  ReviewNote,
-  ReviewRequest,
-  ReviewUser,
 } from '../types/review.js';
 
 export interface GitHubClientOptions {
@@ -79,7 +79,7 @@ function parseNextLink(linkHeader: string | null): string | null {
   return null;
 }
 
-function mapUser(user: { id: number; login: string; name?: string } | null): ReviewUser {
+function mapUser(user: { id: number; login: string; name?: string } | null): ChangeRequestUser {
   return {
     id: user?.id ?? 0,
     username: user?.login ?? 'unknown',
@@ -87,7 +87,7 @@ function mapUser(user: { id: number; login: string; name?: string } | null): Rev
   };
 }
 
-function mapPullRequest(projectId: ProjectRef, pr: GitHubPullRequest): ReviewRequest {
+function mapPullRequest(projectId: ProjectRef, pr: GitHubPullRequest): ChangeRequest {
   return {
     id: pr.id,
     iid: pr.number,
@@ -108,7 +108,7 @@ function mapPullRequest(projectId: ProjectRef, pr: GitHubPullRequest): ReviewReq
   };
 }
 
-function mapIssueComment(comment: GitHubIssueComment): ReviewNote {
+function mapIssueComment(comment: GitHubIssueComment): ChangeRequestNote {
   return {
     id: comment.id,
     body: comment.body ?? '',
@@ -118,7 +118,7 @@ function mapIssueComment(comment: GitHubIssueComment): ReviewNote {
   };
 }
 
-function mapReviewComment(comment: GitHubReviewComment): ReviewNote {
+function mapReviewComment(comment: GitHubReviewComment): ChangeRequestNote {
   return {
     id: comment.id,
     body: comment.body ?? comment.diff_hunk ?? '',
@@ -134,7 +134,7 @@ function mapReviewComment(comment: GitHubReviewComment): ReviewNote {
   };
 }
 
-function mapFile(file: GitHubFile): ReviewDiff {
+function mapFile(file: GitHubFile): ChangeRequestDiff {
   return {
     old_path: file.previous_filename ?? file.filename,
     new_path: file.filename,
@@ -144,7 +144,7 @@ function mapFile(file: GitHubFile): ReviewDiff {
   };
 }
 
-export class GitHubClient implements ReviewClient {
+export class GitHubClient implements ChangeRequestClient {
   private readonly baseUrl: string;
   private readonly token: string;
   private readonly owner: string;
@@ -204,7 +204,7 @@ export class GitHubClient implements ReviewClient {
     return items;
   }
 
-  async listMergeRequests(projectId: ProjectRef, since?: string): Promise<ReviewRequest[]> {
+  async listChangeRequests(projectId: ProjectRef, since?: string): Promise<ChangeRequest[]> {
     const repo = this.repoName(projectId);
     const params = new URLSearchParams({
       state: 'all',
@@ -220,14 +220,14 @@ export class GitHubClient implements ReviewClient {
       .filter((pr) => !since || (pr.updated_at ?? pr.created_at) >= since);
   }
 
-  async listDiscussions(projectId: ProjectRef, mrIid: number): Promise<ReviewDiscussion[]> {
+  async listDiscussions(projectId: ProjectRef, changeRequestNumber: number): Promise<ChangeRequestDiscussion[]> {
     const repo = this.repoName(projectId);
     const [issueComments, reviewComments] = await Promise.all([
       this.paginate<GitHubIssueComment>(
-        `${this.baseUrl}/repos/${this.owner}/${repo}/issues/${mrIid}/comments?per_page=100`,
+        `${this.baseUrl}/repos/${this.owner}/${repo}/issues/${changeRequestNumber}/comments?per_page=100`,
       ),
       this.paginate<GitHubReviewComment>(
-        `${this.baseUrl}/repos/${this.owner}/${repo}/pulls/${mrIid}/comments?per_page=100`,
+        `${this.baseUrl}/repos/${this.owner}/${repo}/pulls/${changeRequestNumber}/comments?per_page=100`,
       ),
     ]);
 
@@ -243,10 +243,10 @@ export class GitHubClient implements ReviewClient {
     ];
   }
 
-  async listDiffs(projectId: ProjectRef, mrIid: number): Promise<ReviewDiff[]> {
+  async listDiffs(projectId: ProjectRef, changeRequestNumber: number): Promise<ChangeRequestDiff[]> {
     const repo = this.repoName(projectId);
     const files = await this.paginate<GitHubFile>(
-      `${this.baseUrl}/repos/${this.owner}/${repo}/pulls/${mrIid}/files?per_page=100`,
+      `${this.baseUrl}/repos/${this.owner}/${repo}/pulls/${changeRequestNumber}/files?per_page=100`,
     );
 
     return files

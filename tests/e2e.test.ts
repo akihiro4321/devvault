@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { chunkFromFetchedBundle } from '../src/ingestion/chunker.js';
+import { chunkFromChangeRequestBundle } from '../src/ingestion/chunker.js';
 import { Embedder } from '../src/ingestion/embedder.js';
 import { LanceIndexer } from '../src/ingestion/indexer.js';
 import { SearchEngine } from '../src/retrieval/search.js';
 import { generateAnswer } from '../src/generation/answer-generator.js';
-import type { FetchedMRBundle } from '../src/ingestion/fetcher.js';
+import type { FetchedChangeRequestBundle } from '../src/types/review.js';
 
 const dbPath = path.resolve('./data/lancedb');
 
@@ -21,8 +21,8 @@ describe('e2e: ingest -> search -> ask', () => {
   });
 
   it('runs full flow with fixture-like data', async () => {
-    const bundle: FetchedMRBundle = {
-      mr: {
+    const bundle: FetchedChangeRequestBundle = {
+      changeRequest: {
         id: 1,
         iid: 101,
         project_id: 123,
@@ -63,7 +63,7 @@ describe('e2e: ingest -> search -> ask', () => {
       ],
     };
 
-    const chunks = chunkFromFetchedBundle(bundle);
+    const chunks = chunkFromChangeRequestBundle(bundle);
     const embedder = new Embedder();
     const vectors = await embedder.embedBatch(chunks.map((c) => c.text));
     chunks.forEach((chunk, idx) => {
@@ -78,7 +78,7 @@ describe('e2e: ingest -> search -> ask', () => {
     const results = await engine.hybridSearch({ query: 'ログイン 500 エラー', topK: 10, rerankTopN: 3 });
 
     expect(results.length).toBeGreaterThan(0);
-    expect(results[0].chunk.source_iid).toBe(101);
+    expect(results[0].chunk.change_request_number).toBe(101);
 
     const answer = await generateAnswer(results, 'ログイン画面で500エラーの過去対応は?');
     expect(answer).toContain('MR !101');

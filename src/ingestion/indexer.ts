@@ -63,9 +63,9 @@ export class LanceIndexer {
 
   async upsert(chunks: DocumentChunk[]): Promise<void> {
     const existing = await this.readSidecar();
-    // Step 1: 更新対象MR (project_id:source_iid) の旧チャンクを先に取り除く。
-    const updateTargets = new Set(chunks.map((c) => `${c.project_id}:${c.source_iid}`));
-    const retained = existing.filter((c) => !updateTargets.has(`${c.project_id}:${c.source_iid}`));
+    // Step 1: 更新対象 ChangeRequest (project_id:change_request_number) の旧チャンクを先に取り除く。
+    const updateTargets = new Set(chunks.map((c) => `${c.project_id}:${c.change_request_number}`));
+    const retained = existing.filter((c) => !updateTargets.has(`${c.project_id}:${c.change_request_number}`));
     // Step 2: source_id で重複排除する（異常系の安全弁）。
     const deduped = new Map<string, DocumentChunk>();
     for (const chunk of [...retained, ...chunks]) deduped.set(chunk.source_id, chunk);

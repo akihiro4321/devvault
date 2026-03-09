@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { CHUNK_MAX_TOKENS, E5_PASSAGE_PREFIX, E5_QUERY_PREFIX } from '../config/constants.js';
 import type { DocumentChunk } from '../types/chunk.js';
-import type { ReviewDiff, ReviewDiscussion, ReviewNote, ReviewRequest } from '../types/review.js';
+import type {
+  ChangeRequest,
+  ChangeRequestDiff,
+  ChangeRequestDiscussion,
+  ChangeRequestNote,
+} from '../types/review.js';
 
 export function addE5Prefix(text: string, isQuery: boolean): string {
   return `${isQuery ? E5_QUERY_PREFIX : E5_PASSAGE_PREFIX}${text}`;
@@ -67,45 +72,49 @@ function summarizeLargeDiff(diff: string): string {
   return `Large diff summary: ${lines.length} lines, +${added} / -${removed}`;
 }
 
-function baseChunk(mr: ReviewRequest, overrides: Partial<DocumentChunk>): Omit<DocumentChunk, 'id'> {
+function baseChunk(changeRequest: ChangeRequest, overrides: Partial<DocumentChunk>): Omit<DocumentChunk, 'id'> {
   return {
     text: '',
-    source_type: 'mr_description',
-    source_system: mr.source_system,
-    project_id: mr.project_id,
-    project_key: `${mr.source_system}-${mr.project_id}`,
-    source_iid: mr.iid,
-    source_id: `${mr.source_system}-mr-${mr.project_id}-${mr.iid}`,
-    author: mr.author.username,
-    labels: mr.labels.join(','),
-    target_branch: mr.target_branch,
-    created_at: mr.created_at,
-    updated_at: mr.updated_at ?? mr.created_at,
-    web_url: mr.web_url,
-    parent_title: mr.title,
+    source_type: 'change_request_description',
+    source_system: changeRequest.source_system,
+    project_id: changeRequest.project_id,
+    project_key: `${changeRequest.source_system}-${changeRequest.project_id}`,
+    change_request_number: changeRequest.iid,
+    source_id: `${changeRequest.source_system}-change-request-${changeRequest.project_id}-${changeRequest.iid}`,
+    author: changeRequest.author.username,
+    labels: changeRequest.labels.join(','),
+    target_branch: changeRequest.target_branch,
+    created_at: changeRequest.created_at,
+    updated_at: changeRequest.updated_at ?? changeRequest.created_at,
+    web_url: changeRequest.web_url,
+    parent_title: changeRequest.title,
     chunk_index: 0,
     total_chunks: 1,
     ...overrides,
   };
 }
 
-export function chunkMRDescription(mr: ReviewRequest): DocumentChunk[] {
-  const rawSections = splitMarkdownSemantically(mr.description || '');
+export function chunkChangeRequestDescription(changeRequest: ChangeRequest): DocumentChunk[] {
+  const rawSections = splitMarkdownSemantically(changeRequest.description || '');
   const sections = rawSections.flatMap((s) => splitByLength(s));
 
   return sections.map((section, idx) => ({
     id: randomUUID(),
-    ...baseChunk(mr, {
-      source_type: 'mr_description',
-      source_id: `mr-description-${mr.project_id}-${mr.iid}-${idx}`,
-      text: `[${mr.title}] ${section}`,
+    ...baseChunk(changeRequest, {
+      source_type: 'change_request_description',
+      source_id: `change-request-description-${changeRequest.project_id}-${changeRequest.iid}-${idx}`,
+      text: `[${changeRequest.title}] ${section}`,
       chunk_index: idx,
       total_chunks: sections.length,
     }),
   }));
 }
 
-export function chunkMRComment(note: ReviewNote, mr: ReviewRequest, thread: ReviewNote[]): DocumentChunk[] {
+export function chunkChangeRequestComment(
+  note: ChangeRequestNote,
+  changeRequest: ChangeRequest,
+  thread: ChangeRequestNote[],
+): DocumentChunk[] {
   if (note.system) return [];
   if (!note.body.trim() || isEmojiOnly(note.body)) return [];
 
@@ -118,12 +127,12 @@ export function chunkMRComment(note: ReviewNote, mr: ReviewRequest, thread: Revi
   const bodyChunks = splitByLength(note.body);
   return bodyChunks.map((body, bodyIdx) => ({
     id: randomUUID(),
-    ...baseChunk(mr, {
-      source_type: 'mr_comment',
-      source_id: `mr-comment-${note.id}-${bodyIdx}`,
+    ...baseChunk(changeRequest, {
+      source_type: 'change_request_comment',
+      source_id: `change-request-comment-${note.id}-${bodyIdx}`,
       author: note.author.username,
       created_at: note.created_at,
-      text: `[${mr.title}] レビューコメント: ${body}`,
+      text: `[${changeRequest.title}] レビューコメント: ${body}`,
       discussion_context: context,
       chunk_index: bodyIdx,
       total_chunks: bodyChunks.length,
@@ -131,7 +140,7 @@ export function chunkMRComment(note: ReviewNote, mr: ReviewRequest, thread: Revi
   }));
 }
 
-export function chunkDiffNote(note: ReviewNote, mr: ReviewRequest): DocumentChunk[] {
+export function chunkDiffNote(note: ChangeRequestNote, changeRequest: ChangeRequest): DocumentChunk[] {
   if (note.system) return [];
   if (!note.body.trim() || isEmojiOnly(note.body)) return [];
 
@@ -142,9 +151,9 @@ export function chunkDiffNote(note: ReviewNote, mr: ReviewRequest): DocumentChun
   const bodies = splitByLength(note.body);
   return bodies.map((body, idx) => ({
     id: randomUUID(),
-    ...baseChunk(mr, {
-      source_type: 'mr_diff_note',
-      source_id: `mr-diff-note-${note.id}-${idx}`,
+    ...baseChunk(changeRequest, {
+      source_type: 'change_request_diff_note',
+      source_id: `change-request-diff-note-${note.id}-${idx}`,
       author: note.author.username,
       created_at: note.created_at,
       file_path: filePath,
@@ -161,7 +170,7 @@ function splitDiffByHunk(diffText: string): string[] {
   return hunks.flatMap((h) => splitByLength(h));
 }
 
-export function chunkDiff(diff: ReviewDiff, mr: ReviewRequest): DocumentChunk[] {
+export function chunkDiff(diff: ChangeRequestDiff, changeRequest: ChangeRequest): DocumentChunk[] {
   const lineCount = diff.diff.split('\n').length;
   const effectiveText = lineCount > 1000 ? summarizeLargeDiff(diff.diff) : diff.diff;
   const pieces = splitDiffByHunk(effectiveText);
@@ -169,9 +178,9 @@ export function chunkDiff(diff: ReviewDiff, mr: ReviewRequest): DocumentChunk[] 
 
   return pieces.map((piece, idx) => ({
     id: randomUUID(),
-    ...baseChunk(mr, {
-      source_type: 'mr_diff',
-      source_id: `mr-diff-${mr.project_id}-${mr.iid}-${filePath}-${idx}`,
+    ...baseChunk(changeRequest, {
+      source_type: 'change_request_diff',
+      source_id: `change-request-diff-${changeRequest.project_id}-${changeRequest.iid}-${filePath}-${idx}`,
       file_path: filePath,
       text: `[${filePath}] コード変更: ${piece}`,
       chunk_index: idx,
@@ -180,27 +189,27 @@ export function chunkDiff(diff: ReviewDiff, mr: ReviewRequest): DocumentChunk[] 
   }));
 }
 
-export function chunkFromFetchedBundle(input: {
-  mr: ReviewRequest;
-  discussions: ReviewDiscussion[];
-  diffs: ReviewDiff[];
+export function chunkFromChangeRequestBundle(input: {
+  changeRequest: ChangeRequest;
+  discussions: ChangeRequestDiscussion[];
+  diffs: ChangeRequestDiff[];
 }): DocumentChunk[] {
   const out: DocumentChunk[] = [];
 
-  out.push(...chunkMRDescription(input.mr));
+  out.push(...chunkChangeRequestDescription(input.changeRequest));
 
   for (const discussion of input.discussions) {
     for (const note of discussion.notes) {
       if ((note.type ?? '').toLowerCase().includes('diff') || note.position) {
-        out.push(...chunkDiffNote(note, input.mr));
+        out.push(...chunkDiffNote(note, input.changeRequest));
       } else {
-        out.push(...chunkMRComment(note, input.mr, discussion.notes));
+        out.push(...chunkChangeRequestComment(note, input.changeRequest, discussion.notes));
       }
     }
   }
 
   for (const diff of input.diffs) {
-    out.push(...chunkDiff(diff, input.mr));
+    out.push(...chunkDiff(diff, input.changeRequest));
   }
 
   return out;

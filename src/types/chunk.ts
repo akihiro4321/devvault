@@ -1,10 +1,10 @@
 import type { ProjectRef } from './review.js';
 
 export type SourceType =
-  | 'mr_description'
-  | 'mr_comment'
-  | 'mr_diff_note'
-  | 'mr_diff';
+  | 'change_request_description'
+  | 'change_request_comment'
+  | 'change_request_diff_note'
+  | 'change_request_diff';
 
 export type SourceSystem = 'gitlab' | 'github' | 'jira' | 'backlog' | 'confluence';
 
@@ -16,7 +16,7 @@ export interface DocumentChunk {
   source_system: SourceSystem;
   project_id: ProjectRef;
   project_key: string;
-  source_iid: number;
+  change_request_number: number;
   source_id: string;
   author: string;
   labels: string;

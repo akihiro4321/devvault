@@ -83,7 +83,7 @@ describe('GitHubClient', () => {
       fetchImpl,
     });
 
-    const pulls = await client.listMergeRequests('web', '2025-01-01T00:00:00Z');
+    const pulls = await client.listChangeRequests('web', '2025-01-01T00:00:00Z');
     const discussions = await client.listDiscussions('web', 42);
     const diffs = await client.listDiffs('web', 42);
 

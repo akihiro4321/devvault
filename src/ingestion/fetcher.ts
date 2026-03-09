@@ -1,9 +1,6 @@
-import type { ProjectRef } from '../types/review.js';
-import type { FetchedReviewBundle, ReviewClient } from '../types/review.js';
+import type { ChangeRequestClient, FetchedChangeRequestBundle, ProjectRef } from '../types/review.js';
 
-export type FetchedMRBundle = FetchedReviewBundle;
-
-export interface FetchMROptions {
+export interface FetchChangeRequestOptions {
   projectId: ProjectRef;
   since?: string;
   concurrency?: number;
@@ -29,19 +26,19 @@ async function runWithConcurrency<T, R>(
   return results.filter((v): v is R => v !== undefined);
 }
 
-export async function fetchMRBundles(
-  client: ReviewClient,
-  options: FetchMROptions,
-): Promise<FetchedReviewBundle[]> {
-  const mrs = await client.listMergeRequests(options.projectId, options.since);
+export async function fetchChangeRequestBundles(
+  client: ChangeRequestClient,
+  options: FetchChangeRequestOptions,
+): Promise<FetchedChangeRequestBundle[]> {
+  const changeRequests = await client.listChangeRequests(options.projectId, options.since);
   const concurrency = options.concurrency ?? 5;
 
-  return runWithConcurrency(mrs, concurrency, async (mr) => {
+  return runWithConcurrency(changeRequests, concurrency, async (changeRequest) => {
     const [discussions, diffs] = await Promise.all([
-      client.listDiscussions(options.projectId, mr.iid),
-      client.listDiffs(options.projectId, mr.iid),
+      client.listDiscussions(options.projectId, changeRequest.iid),
+      client.listDiffs(options.projectId, changeRequest.iid),
     ]);
 
-    return { mr, discussions, diffs };
+    return { changeRequest, discussions, diffs };
   });
 }

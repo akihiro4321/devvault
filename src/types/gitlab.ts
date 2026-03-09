@@ -1,15 +1,15 @@
 import type {
+  ChangeRequest,
+  ChangeRequestDiff,
+  ChangeRequestDiscussion,
+  ChangeRequestNote,
+  ChangeRequestUser,
   DiffPosition,
-  ReviewDiff,
-  ReviewDiscussion,
-  ReviewNote,
-  ReviewRequest,
-  ReviewUser,
 } from './review.js';
 
-export type GitLabUser = ReviewUser;
-export type MergeRequest = ReviewRequest;
-export type Note = ReviewNote;
-export type Discussion = ReviewDiscussion;
-export type MRDiff = ReviewDiff;
+export type GitLabUser = ChangeRequestUser;
+export type GitLabChangeRequest = ChangeRequest;
+export type GitLabNote = ChangeRequestNote;
+export type GitLabDiscussion = ChangeRequestDiscussion;
+export type GitLabDiff = ChangeRequestDiff;
 export type { DiffPosition };

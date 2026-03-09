@@ -12,7 +12,7 @@ function fallbackAnswer(chunks: RankedChunk[], question: string): string {
   }
 
   const citations = chunks
-    .map((c) => `- ${sourceLabel(c.chunk.source_system)} !${c.chunk.source_iid} @${c.chunk.author} ${c.chunk.web_url}`)
+    .map((c) => `- ${sourceLabel(c.chunk.source_system)} !${c.chunk.change_request_number} @${c.chunk.author} ${c.chunk.web_url}`)
     .join('\n');
 
   return [

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { addE5Prefix, chunkDiff, chunkDiffNote, chunkMRComment, chunkMRDescription } from '../src/ingestion/chunker.js';
-import type { MergeRequest, MRDiff, Note } from '../src/types/gitlab.js';
+import { addE5Prefix, chunkChangeRequestComment, chunkChangeRequestDescription, chunkDiff, chunkDiffNote } from '../src/ingestion/chunker.js';
+import type { GitLabChangeRequest, GitLabDiff, GitLabNote } from '../src/types/gitlab.js';
 
-const baseMR: MergeRequest = {
+const baseChangeRequest: GitLabChangeRequest = {
   id: 1,
   iid: 42,
   project_id: 123,
@@ -25,36 +25,36 @@ describe('chunker', () => {
     expect(addE5Prefix('abc', false).startsWith('passage: ')).toBe(true);
   });
 
-  it('chunks MR description by headings', () => {
-    const chunks = chunkMRDescription(baseMR);
+  it('chunks change request description by headings', () => {
+    const chunks = chunkChangeRequestDescription(baseChangeRequest);
     expect(chunks.length).toBeGreaterThan(1);
-    expect(chunks[0].source_type).toBe('mr_description');
+    expect(chunks[0].source_type).toBe('change_request_description');
   });
 
   it('chunks comment with context', () => {
-    const thread: Note[] = [
+    const thread: GitLabNote[] = [
       { id: 1, body: '最初のコメント', author: { id: 1, username: 'a' }, system: false, created_at: '2024-12-01T10:00:00Z' },
       { id: 2, body: '本体コメント', author: { id: 2, username: 'b' }, system: false, created_at: '2024-12-01T10:01:00Z' },
       { id: 3, body: '返信', author: { id: 3, username: 'c' }, system: false, created_at: '2024-12-01T10:02:00Z' },
     ];
-    const chunks = chunkMRComment(thread[1], baseMR, thread);
+    const chunks = chunkChangeRequestComment(thread[1], baseChangeRequest, thread);
     expect(chunks).toHaveLength(1);
     expect(chunks[0].discussion_context).toContain('a: 最初のコメント');
   });
 
   it('excludes system notes', () => {
-    const note: Note = {
+    const note: GitLabNote = {
       id: 10,
       body: 'assigned to',
       author: { id: 1, username: 'sys' },
       system: true,
       created_at: '2024-12-01T10:00:00Z',
     };
-    expect(chunkMRComment(note, baseMR, [note])).toHaveLength(0);
+    expect(chunkChangeRequestComment(note, baseChangeRequest, [note])).toHaveLength(0);
   });
 
   it('chunks diff note with file path', () => {
-    const note: Note = {
+    const note: GitLabNote = {
       id: 11,
       body: 'nullチェックが必要',
       author: { id: 1, username: 'reviewer' },
@@ -63,21 +63,21 @@ describe('chunker', () => {
       position: { new_path: 'src/login.ts', new_line: 12 },
       type: 'DiffNote',
     };
-    const chunks = chunkDiffNote(note, baseMR);
+    const chunks = chunkDiffNote(note, baseChangeRequest);
     expect(chunks).toHaveLength(1);
     expect(chunks[0].file_path).toBe('src/login.ts');
   });
 
   it('summarizes very large diff', () => {
     const huge = Array.from({ length: 1100 }, (_, i) => `+line ${i}`).join('\n');
-    const diff: MRDiff = {
+    const diff: GitLabDiff = {
       old_path: 'a.ts',
       new_path: 'a.ts',
       diff: huge,
       new_file: false,
       deleted_file: false,
     };
-    const chunks = chunkDiff(diff, baseMR);
+    const chunks = chunkDiff(diff, baseChangeRequest);
     expect(chunks[0].text).toContain('Large diff summary');
   });
 });

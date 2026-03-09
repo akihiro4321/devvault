@@ -9,11 +9,11 @@ describe('prompt-builder', () => {
           chunk: {
             id: '1',
             text: 'passage: text',
-            source_type: 'mr_comment',
+            source_type: 'change_request_comment',
             source_system: 'gitlab',
             project_id: 1,
             project_key: 'gitlab-1',
-            source_iid: 342,
+            change_request_number: 342,
             source_id: 's1',
             author: 'tanaka',
             labels: 'bug',

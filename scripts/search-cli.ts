@@ -10,11 +10,17 @@ function readFlag(name: string): string | undefined {
   return process.argv[idx + 1];
 }
 
+function sourceLabel(sourceSystem: string): string {
+  return sourceSystem === 'github' ? 'PR' : 'MR';
+}
+
 async function runOneShot(query: string): Promise<void> {
   const results = await search({ query, topK: 20, rerankTopN: 5 });
   console.log('--- Search Results ---');
   for (const [i, item] of results.entries()) {
-    console.log(`${i + 1}. [MR !${item.chunk.source_iid}] ${item.chunk.parent_title} @${item.chunk.author}`);
+    console.log(
+      `${i + 1}. [${sourceLabel(item.chunk.source_system)} !${item.chunk.change_request_number}] ${item.chunk.parent_title} @${item.chunk.author}`,
+    );
     console.log(`   ${item.chunk.web_url}`);
   }
   console.log('\n--- Answer ---');

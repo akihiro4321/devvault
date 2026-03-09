@@ -1,5 +1,5 @@
-import type { Discussion, MRDiff, MergeRequest } from '../types/gitlab.js';
-import type { ProjectRef, ReviewClient } from '../types/review.js';
+import type { GitLabChangeRequest, GitLabDiff, GitLabDiscussion } from '../types/gitlab.js';
+import type { ChangeRequestClient, ProjectRef } from '../types/review.js';
 
 export interface GitLabClientOptions {
   baseUrl: string;
@@ -21,7 +21,7 @@ function parseNextLink(linkHeader: string | null): string | null {
   return null;
 }
 
-export class GitLabClient implements ReviewClient {
+export class GitLabClient implements ChangeRequestClient {
   private readonly baseUrl: string;
   private readonly token: string;
   private readonly maxRetries: number;
@@ -77,7 +77,7 @@ export class GitLabClient implements ReviewClient {
     return projectId;
   }
 
-  async listMergeRequests(projectId: ProjectRef, since?: string): Promise<MergeRequest[]> {
+  async listChangeRequests(projectId: ProjectRef, since?: string): Promise<GitLabChangeRequest[]> {
     const resolvedProjectId = this.assertProjectId(projectId);
     const params = new URLSearchParams({
       per_page: '100',
@@ -87,21 +87,21 @@ export class GitLabClient implements ReviewClient {
     });
     if (since) params.set('updated_after', since);
     const url = `${this.baseUrl}/api/v4/projects/${resolvedProjectId}/merge_requests?${params.toString()}`;
-    return (await this.paginate<MergeRequest>(url)).map((mr) => ({
-      ...mr,
+    return (await this.paginate<GitLabChangeRequest>(url)).map((changeRequest) => ({
+      ...changeRequest,
       source_system: 'gitlab',
     }));
   }
 
-  async listDiscussions(projectId: ProjectRef, mrIid: number): Promise<Discussion[]> {
+  async listDiscussions(projectId: ProjectRef, changeRequestNumber: number): Promise<GitLabDiscussion[]> {
     const resolvedProjectId = this.assertProjectId(projectId);
-    const url = `${this.baseUrl}/api/v4/projects/${resolvedProjectId}/merge_requests/${mrIid}/discussions?per_page=100`;
-    return this.paginate<Discussion>(url);
+    const url = `${this.baseUrl}/api/v4/projects/${resolvedProjectId}/merge_requests/${changeRequestNumber}/discussions?per_page=100`;
+    return this.paginate<GitLabDiscussion>(url);
   }
 
-  async listDiffs(projectId: ProjectRef, mrIid: number): Promise<MRDiff[]> {
+  async listDiffs(projectId: ProjectRef, changeRequestNumber: number): Promise<GitLabDiff[]> {
     const resolvedProjectId = this.assertProjectId(projectId);
-    const url = `${this.baseUrl}/api/v4/projects/${resolvedProjectId}/merge_requests/${mrIid}/diffs?per_page=100`;
-    return this.paginate<MRDiff>(url);
+    const url = `${this.baseUrl}/api/v4/projects/${resolvedProjectId}/merge_requests/${changeRequestNumber}/diffs?per_page=100`;
+    return this.paginate<GitLabDiff>(url);
   }
 }

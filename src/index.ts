@@ -1,12 +1,12 @@
 import { env } from './config/env.js';
-import { chunkFromFetchedBundle } from './ingestion/chunker.js';
+import { chunkFromChangeRequestBundle } from './ingestion/chunker.js';
 import { Embedder } from './ingestion/embedder.js';
-import { fetchMRBundles } from './ingestion/fetcher.js';
+import { fetchChangeRequestBundles } from './ingestion/fetcher.js';
 import { GitHubClient } from './ingestion/github-client.js';
 import { GitLabClient } from './ingestion/gitlab-client.js';
 import { LanceIndexer } from './ingestion/indexer.js';
 import { SearchEngine } from './retrieval/search.js';
-import type { ProjectRef, ReviewClient } from './types/review.js';
+import type { ChangeRequestClient, ProjectRef } from './types/review.js';
 import type { SearchRequest } from './types/search.js';
 import { generateAnswer } from './generation/answer-generator.js';
 
@@ -16,7 +16,7 @@ export interface IngestOptions {
   provider?: 'gitlab' | 'github';
 }
 
-function createReviewClient(provider: 'gitlab' | 'github'): ReviewClient {
+function createChangeRequestClient(provider: 'gitlab' | 'github'): ChangeRequestClient {
   if (provider === 'github') {
     if (!env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN is required for GitHub ingest');
     if (!env.GITHUB_OWNER) throw new Error('GITHUB_OWNER is required for GitHub ingest');
@@ -36,14 +36,14 @@ function createReviewClient(provider: 'gitlab' | 'github'): ReviewClient {
 
 export async function ingest(options: IngestOptions): Promise<number> {
   const provider = options.provider ?? env.SCM_PROVIDER;
-  const client = createReviewClient(provider);
+  const client = createChangeRequestClient(provider);
 
-  const bundles = await fetchMRBundles(client, {
+  const bundles = await fetchChangeRequestBundles(client, {
     projectId: options.projectId,
     since: options.since,
   });
 
-  const chunks = bundles.flatMap((bundle) => chunkFromFetchedBundle(bundle));
+  const chunks = bundles.flatMap((bundle) => chunkFromChangeRequestBundle(bundle));
   const embedder = new Embedder();
   // chunk.text はプレフィックスなしの検索用本文。embedding時のみ embedder 内で "passage: " を付与する。
   const vectors = await embedder.embedBatch(chunks.map((c) => c.text), false);

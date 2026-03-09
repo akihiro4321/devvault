@@ -1,6 +1,6 @@
 export type ProjectRef = number | string;
 
-export interface ReviewUser {
+export interface ChangeRequestUser {
   id: number;
   username: string;
   name?: string;
@@ -13,10 +13,10 @@ export interface DiffPosition {
   old_line?: number;
 }
 
-export interface ReviewNote {
+export interface ChangeRequestNote {
   id: number;
   body: string;
-  author: ReviewUser;
+  author: ChangeRequestUser;
   type?: string | null;
   position?: DiffPosition | null;
   system: boolean;
@@ -24,12 +24,12 @@ export interface ReviewNote {
   created_at: string;
 }
 
-export interface ReviewDiscussion {
+export interface ChangeRequestDiscussion {
   id: string;
-  notes: ReviewNote[];
+  notes: ChangeRequestNote[];
 }
 
-export interface ReviewDiff {
+export interface ChangeRequestDiff {
   old_path: string;
   new_path: string;
   diff: string;
@@ -37,7 +37,7 @@ export interface ReviewDiff {
   deleted_file: boolean;
 }
 
-export interface ReviewRequest {
+export interface ChangeRequest {
   id: number;
   iid: number;
   project_id: ProjectRef;
@@ -47,7 +47,7 @@ export interface ReviewRequest {
   state: 'opened' | 'merged' | 'closed' | string;
   source_branch: string;
   target_branch: string;
-  author: ReviewUser;
+  author: ChangeRequestUser;
   labels: string[];
   created_at: string;
   updated_at?: string;
@@ -56,14 +56,14 @@ export interface ReviewRequest {
   draft?: boolean;
 }
 
-export interface FetchedReviewBundle {
-  mr: ReviewRequest;
-  discussions: ReviewDiscussion[];
-  diffs: ReviewDiff[];
+export interface FetchedChangeRequestBundle {
+  changeRequest: ChangeRequest;
+  discussions: ChangeRequestDiscussion[];
+  diffs: ChangeRequestDiff[];
 }
 
-export interface ReviewClient {
-  listMergeRequests(projectId: ProjectRef, since?: string): Promise<ReviewRequest[]>;
-  listDiscussions(projectId: ProjectRef, mrIid: number): Promise<ReviewDiscussion[]>;
-  listDiffs(projectId: ProjectRef, mrIid: number): Promise<ReviewDiff[]>;
+export interface ChangeRequestClient {
+  listChangeRequests(projectId: ProjectRef, since?: string): Promise<ChangeRequest[]>;
+  listDiscussions(projectId: ProjectRef, changeRequestNumber: number): Promise<ChangeRequestDiscussion[]>;
+  listDiffs(projectId: ProjectRef, changeRequestNumber: number): Promise<ChangeRequestDiff[]>;
 }

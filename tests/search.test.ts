@@ -5,11 +5,11 @@ import type { DocumentChunk } from '../src/types/chunk.js';
 const baseChunk = (id: string, text: string): DocumentChunk => ({
   id,
   text,
-  source_type: 'mr_comment',
+  source_type: 'change_request_comment',
   source_system: 'gitlab',
   project_id: 1,
   project_key: 'gitlab-1',
-  source_iid: 1,
+  change_request_number: 1,
   source_id: id,
   author: 'tanaka',
   labels: 'bug',

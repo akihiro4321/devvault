@@ -10,7 +10,7 @@ export function buildPrompt(chunks: RankedChunk[], question: string): string {
     return [
       `[chunk ${idx + 1}]`,
       `source_type=${c.source_type}`,
-      `${sourceLabel(c.source_system)}=!${c.source_iid}`,
+      `${sourceLabel(c.source_system)}=!${c.change_request_number}`,
       `author=@${c.author}`,
       `created_at=${c.created_at}`,
       `url=${c.web_url}`,
