@@ -14,6 +14,7 @@ export function buildWhereClause(filters?: SearchFilters): string {
   if (filters.filePathLike) clauses.push(`file_path LIKE '%${filters.filePathLike}%'`);
   if (filters.targetBranch) clauses.push(`target_branch = '${filters.targetBranch}'`);
   if (typeof filters.projectId === 'number') clauses.push(`project_id = ${filters.projectId}`);
+  if (typeof filters.projectId === 'string') clauses.push(`project_id = '${filters.projectId}'`);
 
   return clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
 }
@@ -26,7 +27,7 @@ export function applyFilters(chunks: DocumentChunk[], filters?: SearchFilters): 
     if (filters.author && chunk.author !== filters.author) return false;
     if (filters.filePathLike && !(chunk.file_path ?? '').includes(filters.filePathLike)) return false;
     if (filters.targetBranch && chunk.target_branch !== filters.targetBranch) return false;
-    if (typeof filters.projectId === 'number' && chunk.project_id !== filters.projectId) return false;
+    if (filters.projectId !== undefined && chunk.project_id !== filters.projectId) return false;
     return true;
   });
 }

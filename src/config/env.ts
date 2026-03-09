@@ -5,9 +5,13 @@ import { DEFAULT_EMBEDDING_MODEL } from './constants.js';
 dotenv.config();
 
 const envSchema = z.object({
+  SCM_PROVIDER: z.enum(['gitlab', 'github']).default('gitlab'),
   GITLAB_URL: z.string().url().default('https://gitlab.example.com'),
   GITLAB_TOKEN: z.string().min(1).optional(),
   GITLAB_PROJECT_IDS: z.string().default(''),
+  GITHUB_URL: z.string().url().default('https://api.github.com'),
+  GITHUB_TOKEN: z.string().min(1).optional(),
+  GITHUB_OWNER: z.string().default(''),
   LANCEDB_PATH: z.string().default('./data/lancedb'),
   EMBEDDING_MODEL: z.string().default(DEFAULT_EMBEDDING_MODEL),
   LLM_PROVIDER: z.enum(['gemini', 'claude']).default('gemini'),

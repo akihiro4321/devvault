@@ -2,24 +2,41 @@ import { env } from './config/env.js';
 import { chunkFromFetchedBundle } from './ingestion/chunker.js';
 import { Embedder } from './ingestion/embedder.js';
 import { fetchMRBundles } from './ingestion/fetcher.js';
+import { GitHubClient } from './ingestion/github-client.js';
 import { GitLabClient } from './ingestion/gitlab-client.js';
 import { LanceIndexer } from './ingestion/indexer.js';
 import { SearchEngine } from './retrieval/search.js';
+import type { ProjectRef, ReviewClient } from './types/review.js';
 import type { SearchRequest } from './types/search.js';
 import { generateAnswer } from './generation/answer-generator.js';
 
 export interface IngestOptions {
-  projectId: number;
+  projectId: ProjectRef;
   since?: string;
+  provider?: 'gitlab' | 'github';
 }
 
-export async function ingest(options: IngestOptions): Promise<number> {
-  if (!env.GITLAB_TOKEN) throw new Error('GITLAB_TOKEN is required for ingest');
+function createReviewClient(provider: 'gitlab' | 'github'): ReviewClient {
+  if (provider === 'github') {
+    if (!env.GITHUB_TOKEN) throw new Error('GITHUB_TOKEN is required for GitHub ingest');
+    if (!env.GITHUB_OWNER) throw new Error('GITHUB_OWNER is required for GitHub ingest');
+    return new GitHubClient({
+      baseUrl: env.GITHUB_URL,
+      token: env.GITHUB_TOKEN,
+      owner: env.GITHUB_OWNER,
+    });
+  }
 
-  const client = new GitLabClient({
+  if (!env.GITLAB_TOKEN) throw new Error('GITLAB_TOKEN is required for GitLab ingest');
+  return new GitLabClient({
     baseUrl: env.GITLAB_URL,
     token: env.GITLAB_TOKEN,
   });
+}
+
+export async function ingest(options: IngestOptions): Promise<number> {
+  const provider = options.provider ?? env.SCM_PROVIDER;
+  const client = createReviewClient(provider);
 
   const bundles = await fetchMRBundles(client, {
     projectId: options.projectId,

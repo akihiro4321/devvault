@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { CHUNK_MAX_TOKENS, E5_PASSAGE_PREFIX, E5_QUERY_PREFIX } from '../config/constants.js';
 import type { DocumentChunk } from '../types/chunk.js';
-import type { Discussion, MRDiff, MergeRequest, Note } from '../types/gitlab.js';
+import type { ReviewDiff, ReviewDiscussion, ReviewNote, ReviewRequest } from '../types/review.js';
 
 export function addE5Prefix(text: string, isQuery: boolean): string {
   return `${isQuery ? E5_QUERY_PREFIX : E5_PASSAGE_PREFIX}${text}`;
@@ -67,15 +67,15 @@ function summarizeLargeDiff(diff: string): string {
   return `Large diff summary: ${lines.length} lines, +${added} / -${removed}`;
 }
 
-function baseChunk(mr: MergeRequest, overrides: Partial<DocumentChunk>): Omit<DocumentChunk, 'id'> {
+function baseChunk(mr: ReviewRequest, overrides: Partial<DocumentChunk>): Omit<DocumentChunk, 'id'> {
   return {
     text: '',
     source_type: 'mr_description',
-    source_system: 'gitlab',
+    source_system: mr.source_system,
     project_id: mr.project_id,
-    project_key: `gitlab-${mr.project_id}`,
+    project_key: `${mr.source_system}-${mr.project_id}`,
     source_iid: mr.iid,
-    source_id: `mr-${mr.project_id}-${mr.iid}`,
+    source_id: `${mr.source_system}-mr-${mr.project_id}-${mr.iid}`,
     author: mr.author.username,
     labels: mr.labels.join(','),
     target_branch: mr.target_branch,
@@ -89,7 +89,7 @@ function baseChunk(mr: MergeRequest, overrides: Partial<DocumentChunk>): Omit<Do
   };
 }
 
-export function chunkMRDescription(mr: MergeRequest): DocumentChunk[] {
+export function chunkMRDescription(mr: ReviewRequest): DocumentChunk[] {
   const rawSections = splitMarkdownSemantically(mr.description || '');
   const sections = rawSections.flatMap((s) => splitByLength(s));
 
@@ -105,7 +105,7 @@ export function chunkMRDescription(mr: MergeRequest): DocumentChunk[] {
   }));
 }
 
-export function chunkMRComment(note: Note, mr: MergeRequest, thread: Note[]): DocumentChunk[] {
+export function chunkMRComment(note: ReviewNote, mr: ReviewRequest, thread: ReviewNote[]): DocumentChunk[] {
   if (note.system) return [];
   if (!note.body.trim() || isEmojiOnly(note.body)) return [];
 
@@ -131,7 +131,7 @@ export function chunkMRComment(note: Note, mr: MergeRequest, thread: Note[]): Do
   }));
 }
 
-export function chunkDiffNote(note: Note, mr: MergeRequest): DocumentChunk[] {
+export function chunkDiffNote(note: ReviewNote, mr: ReviewRequest): DocumentChunk[] {
   if (note.system) return [];
   if (!note.body.trim() || isEmojiOnly(note.body)) return [];
 
@@ -161,7 +161,7 @@ function splitDiffByHunk(diffText: string): string[] {
   return hunks.flatMap((h) => splitByLength(h));
 }
 
-export function chunkDiff(diff: MRDiff, mr: MergeRequest): DocumentChunk[] {
+export function chunkDiff(diff: ReviewDiff, mr: ReviewRequest): DocumentChunk[] {
   const lineCount = diff.diff.split('\n').length;
   const effectiveText = lineCount > 1000 ? summarizeLargeDiff(diff.diff) : diff.diff;
   const pieces = splitDiffByHunk(effectiveText);
@@ -181,9 +181,9 @@ export function chunkDiff(diff: MRDiff, mr: MergeRequest): DocumentChunk[] {
 }
 
 export function chunkFromFetchedBundle(input: {
-  mr: MergeRequest;
-  discussions: Discussion[];
-  diffs: MRDiff[];
+  mr: ReviewRequest;
+  discussions: ReviewDiscussion[];
+  diffs: ReviewDiff[];
 }): DocumentChunk[] {
   const out: DocumentChunk[] = [];
 

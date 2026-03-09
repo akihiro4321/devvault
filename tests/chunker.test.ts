@@ -6,6 +6,7 @@ const baseMR: MergeRequest = {
   id: 1,
   iid: 42,
   project_id: 123,
+  source_system: 'gitlab',
   title: 'ログイン500エラー修正',
   description: '# 背景\nログイン時に500\n\n# 対応\nDB接続再試行',
   state: 'merged',

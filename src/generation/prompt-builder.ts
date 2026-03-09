@@ -1,12 +1,16 @@
 import type { RankedChunk } from '../types/search.js';
 
+function sourceLabel(sourceSystem: string): string {
+  return sourceSystem === 'github' ? 'PR' : 'MR';
+}
+
 export function buildPrompt(chunks: RankedChunk[], question: string): string {
   const lines = chunks.map((item, idx) => {
     const c = item.chunk;
     return [
       `[chunk ${idx + 1}]`,
       `source_type=${c.source_type}`,
-      `MR=!${c.source_iid}`,
+      `${sourceLabel(c.source_system)}=!${c.source_iid}`,
       `author=@${c.author}`,
       `created_at=${c.created_at}`,
       `url=${c.web_url}`,
@@ -16,7 +20,7 @@ export function buildPrompt(chunks: RankedChunk[], question: string): string {
 
   return [
     'あなたは開発チームのナレッジベースアシスタントです。',
-    '検索結果のみに基づいて回答し、必ず出典MR/コメントを明記してください。',
+    '検索結果のみに基づいて回答し、必ず出典MR/PR/コメントを明記してください。',
     '',
     '## 検索結果',
     ...lines,

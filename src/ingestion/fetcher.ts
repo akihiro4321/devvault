@@ -1,14 +1,10 @@
-import type { Discussion, MRDiff, MergeRequest } from '../types/gitlab.js';
-import { GitLabClient } from './gitlab-client.js';
+import type { ProjectRef } from '../types/review.js';
+import type { FetchedReviewBundle, ReviewClient } from '../types/review.js';
 
-export interface FetchedMRBundle {
-  mr: MergeRequest;
-  discussions: Discussion[];
-  diffs: MRDiff[];
-}
+export type FetchedMRBundle = FetchedReviewBundle;
 
 export interface FetchMROptions {
-  projectId: number;
+  projectId: ProjectRef;
   since?: string;
   concurrency?: number;
 }
@@ -34,9 +30,9 @@ async function runWithConcurrency<T, R>(
 }
 
 export async function fetchMRBundles(
-  client: GitLabClient,
+  client: ReviewClient,
   options: FetchMROptions,
-): Promise<FetchedMRBundle[]> {
+): Promise<FetchedReviewBundle[]> {
   const mrs = await client.listMergeRequests(options.projectId, options.since);
   const concurrency = options.concurrency ?? 5;
 

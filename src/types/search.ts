@@ -1,3 +1,4 @@
+import type { ProjectRef } from './review.js';
 import type { DocumentChunk, SourceType } from './chunk.js';
 
 export interface SearchFilters {
@@ -6,7 +7,7 @@ export interface SearchFilters {
   author?: string;
   filePathLike?: string;
   targetBranch?: string;
-  projectId?: number;
+  projectId?: ProjectRef;
 }
 
 export interface SearchRequest {

@@ -26,6 +26,7 @@ describe('e2e: ingest -> search -> ask', () => {
         id: 1,
         iid: 101,
         project_id: 123,
+        source_system: 'gitlab',
         title: 'ログイン500エラー対応',
         description: '接続プール枯渇時のリトライを追加',
         state: 'merged',
