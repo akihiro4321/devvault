@@ -6,9 +6,9 @@ function sourceLabel(sourceSystem: string): string {
   return sourceSystem === 'github' ? 'PR' : 'MR';
 }
 
-function fallbackAnswer(chunks: RankedChunk[], question: string): string {
+function buildExtractiveAnswer(chunks: RankedChunk[], question: string): string {
   if (chunks.length === 0) {
-    return `質問: ${question}\n\n該当する過去事例は見つかりませんでした。`;
+    return `回答モード: extractive\n質問: ${question}\n\n該当する過去事例は見つかりませんでした。`;
   }
 
   const citations = chunks
@@ -16,6 +16,7 @@ function fallbackAnswer(chunks: RankedChunk[], question: string): string {
     .join('\n');
 
   return [
+    '回答モード: extractive',
     `質問: ${question}`,
     '',
     '検索結果に基づく要約:',
@@ -27,9 +28,15 @@ function fallbackAnswer(chunks: RankedChunk[], question: string): string {
 }
 
 export async function generateAnswer(chunks: RankedChunk[], question: string): Promise<string> {
-  const prompt = buildPrompt(chunks, question);
+  if (env.ANSWER_MODE === 'extractive') {
+    return buildExtractiveAnswer(chunks, question);
+  }
 
-  if (!env.LLM_API_KEY) return fallbackAnswer(chunks, question);
+  if (!env.LLM_API_KEY) {
+    throw new Error('LLM_API_KEY is required when ANSWER_MODE=llm');
+  }
+
+  const prompt = buildPrompt(chunks, question);
 
   try {
     const { streamText } = await import('ai');
@@ -59,8 +66,8 @@ export async function generateAnswer(chunks: RankedChunk[], question: string): P
       for await (const part of stream.textStream) out += part;
       if (out.trim()) return out;
     }
-    return fallbackAnswer(chunks, question);
+    throw new Error('LLM returned empty response');
   } catch {
-    return fallbackAnswer(chunks, question);
+    throw new Error('Failed to generate answer in llm mode');
   }
 }

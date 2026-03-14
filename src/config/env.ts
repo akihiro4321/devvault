@@ -14,14 +14,12 @@ const envSchema = z.object({
   GITHUB_OWNER: z.string().default(''),
   LANCEDB_PATH: z.string().default('./data/lancedb'),
   EMBEDDING_MODEL: z.string().default(DEFAULT_EMBEDDING_MODEL),
+  ANSWER_MODE: z.enum(['extractive', 'llm']).default('extractive'),
   LLM_PROVIDER: z.enum(['gemini', 'claude']).default('gemini'),
   LLM_API_KEY: z.string().optional(),
   LLM_MODEL: z.string().default('gemini-2.0-flash'),
   INGEST_BATCH_SIZE: z.coerce.number().int().positive().default(50),
   INGEST_SINCE: z.string().default('2024-01-01'),
-  EMBEDDING_MOCK: z
-    .preprocess((v) => (typeof v === 'string' ? v === 'true' : false), z.boolean())
-    .default(false),
 });
 
 export type Env = z.infer<typeof envSchema>;

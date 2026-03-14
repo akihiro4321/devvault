@@ -21,6 +21,7 @@ npm run search -- --query "ログインの500エラー対応"
 
 ## 注意
 
-- Embeddingは `EMBEDDING_MOCK=true` で軽量モードに切り替え可能です（テスト推奨）。
+- Embedding は実モデル前提です。テスト用モックはアプリ本体ではなくテスト側で差し込みます。
 - LanceDB操作は `data/lancedb` に保存します。
 - GitHub 取り込みは `GITHUB_OWNER` と `--project-id <repo>` の組み合わせで対象リポジトリを指定します。
+- `ANSWER_MODE=extractive` では検索結果ベースの簡易回答、`ANSWER_MODE=llm` では LLM 回答を返します。`llm` では `LLM_API_KEY` が必須です。

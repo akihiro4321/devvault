@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { chunkFromChangeRequestBundle } from '../src/ingestion/chunker.js';
-import { Embedder } from '../src/ingestion/embedder.js';
+import { EMBEDDING_DIMENSION } from '../src/config/constants.js';
+import { addE5Prefix, chunkFromChangeRequestBundle } from '../src/ingestion/chunker.js';
 import { LanceIndexer } from '../src/ingestion/indexer.js';
 import { SearchEngine } from '../src/retrieval/search.js';
 import { generateAnswer } from '../src/generation/answer-generator.js';
@@ -10,9 +10,24 @@ import type { FetchedChangeRequestBundle } from '../src/types/review.js';
 
 const dbPath = path.resolve('./data/lancedb');
 
+function toVector(text: string): number[] {
+  const vector = new Array<number>(EMBEDDING_DIMENSION).fill(0);
+  for (let i = 0; i < text.length; i += 1) {
+    const code = text.charCodeAt(i);
+    vector[i % EMBEDDING_DIMENSION] += (code % 31) / 31;
+  }
+  const norm = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0)) || 1;
+  return vector.map((v) => v / norm);
+}
+
+const mockEmbedder = {
+  embed: async (text: string, isQuery = false): Promise<number[]> => toVector(addE5Prefix(text, isQuery)),
+  embedBatch: async (texts: string[], isQuery = false): Promise<number[][]> =>
+    Promise.all(texts.map((text) => mockEmbedder.embed(text, isQuery))),
+};
+
 describe('e2e: ingest -> search -> ask', () => {
   beforeEach(async () => {
-    process.env.EMBEDDING_MOCK = 'true';
     await fs.rm(dbPath, { recursive: true, force: true });
   });
 
@@ -64,8 +79,7 @@ describe('e2e: ingest -> search -> ask', () => {
     };
 
     const chunks = chunkFromChangeRequestBundle(bundle);
-    const embedder = new Embedder();
-    const vectors = await embedder.embedBatch(chunks.map((c) => c.text));
+    const vectors = await mockEmbedder.embedBatch(chunks.map((c) => c.text));
     chunks.forEach((chunk, idx) => {
       chunk.vector = vectors[idx];
     });
@@ -74,13 +88,14 @@ describe('e2e: ingest -> search -> ask', () => {
     await indexer.createTable();
     await indexer.upsert(chunks);
 
-    const engine = new SearchEngine({ embedder, indexer });
+    const engine = new SearchEngine({ embedder: mockEmbedder as any, indexer });
     const results = await engine.hybridSearch({ query: 'ログイン 500 エラー', topK: 10, rerankTopN: 3 });
 
     expect(results.length).toBeGreaterThan(0);
     expect(results[0].chunk.change_request_number).toBe(101);
 
     const answer = await generateAnswer(results, 'ログイン画面で500エラーの過去対応は?');
+    expect(answer).toContain('回答モード: extractive');
     expect(answer).toContain('MR !101');
   });
 });

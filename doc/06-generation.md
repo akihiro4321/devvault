@@ -3,15 +3,16 @@
 ## 1. プロンプト生成
 `src/generation/prompt-builder.ts`:
 - 検索チャンクを列挙
-- source_type / MR番号 / author / 日時 / URL / text を明示
-- 「検索結果のみに基づく回答」をsystem指示
+- `source_type` / MR または PR 番号 / author / 日時 / URL / text を明示
+- provider に応じて出典ラベルを `MR` / `PR` で出し分ける
+- 「検索結果のみに基づく回答」を system 指示する
 
 ## 2. 回答生成
 `src/generation/answer-generator.ts`:
 - `LLM_API_KEY` がある場合: `ai` の `streamText()` を利用
 - キー未設定または失敗時: フォールバック回答
   - 要約
-  - 出典（`MR !iid @author URL`）
+  - 出典（`MR !number` または `PR !number`）
 
 ## 3. 出力方針
 - 出典付き

@@ -72,6 +72,9 @@ export class LanceIndexer {
     const values = Array.from(deduped.values());
     await this.writeSidecar(values);
 
+    // Sidecar JSON is the current source of truth for read/search paths.
+    // LanceDB is maintained as a best-effort mirror for future native retrieval.
+    // TODO: Choose one persistent read path: either move search to LanceDB or remove the mirror table.
     if (this.table && this.db) {
       try {
         await this.db.dropTable(TABLE_NAME);
@@ -88,6 +91,7 @@ export class LanceIndexer {
   }
 
   async readAll(): Promise<DocumentChunk[]> {
+    // The current retrieval path reads from sidecar only.
     return this.readSidecar();
   }
 }
