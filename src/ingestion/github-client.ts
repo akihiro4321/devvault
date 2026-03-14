@@ -213,11 +213,29 @@ export class GitHubClient implements ChangeRequestClient {
       per_page: '100',
     });
     const url = `${this.baseUrl}/repos/${this.owner}/${repo}/pulls?${params.toString()}`;
-    const pulls = await this.paginate<GitHubPullRequest>(url);
+    const pulls: ChangeRequest[] = [];
+    let nextUrl: string | null = url;
 
-    return pulls
-      .map((pr) => mapPullRequest(projectId, pr))
-      .filter((pr) => !since || (pr.updated_at ?? pr.created_at) >= since);
+    while (nextUrl) {
+      const response = await this.request(nextUrl);
+      const pageData = (await response.json()) as GitHubPullRequest[];
+
+      let shouldStop = false;
+      for (const pr of pageData) {
+        const mapped = mapPullRequest(projectId, pr);
+        const updatedAt = mapped.updated_at ?? mapped.created_at;
+        if (since && updatedAt < since) {
+          shouldStop = true;
+          break;
+        }
+        pulls.push(mapped);
+      }
+
+      if (shouldStop) break;
+      nextUrl = parseNextLink(response.headers.get('Link'));
+    }
+
+    return pulls;
   }
 
   async listDiscussions(projectId: ProjectRef, changeRequestNumber: number): Promise<ChangeRequestDiscussion[]> {
